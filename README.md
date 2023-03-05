@@ -1,6 +1,6 @@
 # flutter_map_example
 
-A new Flutter project.
+A mini-project of work with a map similar to Uber implemented with Flutter
 
 ## Getting Started
 
