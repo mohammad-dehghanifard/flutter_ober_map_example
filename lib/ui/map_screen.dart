@@ -16,13 +16,14 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List userCurrentState = [UserStates.selectedOrigin];
-  List<GeoPoint> goPoint = []; // map points
+  List<GeoPoint> geoPoint = []; /// map points
   Widget markIcon = SvgPicture.asset(Assets.images.origin,height: 100,width: 40); // map icon marker
 
   //map controller
   MapController mapController = MapController(
     initMapWithUserPosition: false,
-    initPosition: GeoPoint(latitude:28.9122,longitude:50.8278)
+    initPosition:
+    GeoPoint(latitude: 28.9122,longitude:50.8278)
   );
   @override
   Widget build(BuildContext context) {
@@ -31,7 +32,19 @@ class _MapScreenState extends State<MapScreen> {
         child: Stack(
           children: [
             // osm map
-            Container(color: Colors.grey.shade300),
+            SizedBox.expand(
+              child: OSMFlutter(
+                controller: mapController,
+                trackMyPosition: true,
+                isPicker: true,
+                mapIsLoading: const Center(child:  CircularProgressIndicator()),
+                markerOption: MarkerOption(advancedPickerMarker: MarkerIcon(iconWidget: markIcon)),
+                initZoom: 15,
+                minZoomLevel: 8,
+                maxZoomLevel: 18,
+                stepZoom: 1,
+              ),
+            ),
             // state
             currentState(),
             // back btn
@@ -52,7 +65,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Positioned originState() {
+  Widget originState() {
     return Positioned(
             bottom: 0,
             left: 0,
@@ -60,16 +73,21 @@ class _MapScreenState extends State<MapScreen> {
             child: Padding(
               padding: const EdgeInsets.all(AppDimens.large),
               child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    /// get origin location point
+                    GeoPoint originGeoPoint = await mapController.getCurrentPositionAdvancedPositionPicker();
+                    geoPoint.add(originGeoPoint);
+                    markIcon = SvgPicture.asset(Assets.images.destination);
                     setState(() {
                       userCurrentState.add(UserStates.selectedDestination);
                     });
+                    mapController.init();
                   },
                   child: Text("انتخاب مبدا",style: AppTextStyle.btnTxtStyle)),
             ),
           );
   }
-  Positioned destinationState() {
+  Widget destinationState() {
     return Positioned(
             bottom: 0,
             left: 0,
@@ -86,7 +104,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           );
   }
-  Positioned reqDriverState() {
+  Widget reqDriverState() {
     return Positioned(
             bottom: 0,
             left: 0,
