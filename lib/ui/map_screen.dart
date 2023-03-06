@@ -3,6 +3,9 @@ import 'package:flutter_map_example/common/dimens/dimens.dart';
 import 'package:flutter_map_example/common/text_style/text_style.dart';
 import 'package:flutter_map_example/common/user_states/user_states.dart';
 import 'package:flutter_map_example/common/widget/back_btn_widget.dart';
+import 'package:flutter_map_example/gen/assets.gen.dart';
+import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -13,6 +16,14 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List userCurrentState = [UserStates.selectedOrigin];
+  List<GeoPoint> goPoint = []; // map points
+  Widget markIcon = SvgPicture.asset(Assets.images.origin,height: 100,width: 40); // map icon marker
+
+  //map controller
+  MapController mapController = MapController(
+    initMapWithUserPosition: false,
+    initPosition: GeoPoint(latitude:28.9122,longitude:50.8278)
+  );
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,7 +32,7 @@ class _MapScreenState extends State<MapScreen> {
           children: [
             // osm map
             Container(color: Colors.grey.shade300),
-            // btn
+            // state
             currentState(),
             // back btn
             Positioned(
