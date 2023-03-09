@@ -6,6 +6,7 @@ import 'package:flutter_map_example/common/widget/back_btn_widget.dart';
 import 'package:flutter_map_example/gen/assets.gen.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geocoding/geocoding.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -18,6 +19,8 @@ class _MapScreenState extends State<MapScreen> {
   List userCurrentState = [UserStates.selectedOrigin]; // current state
   List<GeoPoint> geoPoint = []; // map points
   String distance = 'در حال محسابه فاصله تا مقصد...';
+  String originAddress = ' در حال یافتن مبدا';
+  String destinationAddress = ' در حال یافتن مقصد';
   Widget iconMarker = SvgPicture.asset(Assets.images.origin,height: 100,width: 40); /// map icon marker
   Widget originMarker = SvgPicture.asset(Assets.images.origin,height: 100,width: 40);
   Widget destinationMarker = SvgPicture.asset(Assets.images.destination,height: 100,width: 40);
@@ -54,17 +57,29 @@ class _MapScreenState extends State<MapScreen> {
             Positioned(
               top: AppDimens.small,
               left: AppDimens.medium,
-              child: MapBackBtn(onTap: () {
-                if(geoPoint.isNotEmpty){
-                  geoPoint.removeLast();
-                  iconMarker = SvgPicture.asset(Assets.images.origin,height: 100,width: 40);
-                  mapController.init();
-                }
-                if(userCurrentState.length > 1){
+              child: MapBackBtn(
+                  onTap: () {
+                  switch(userCurrentState.last){
+                    case UserStates.selectedOrigin :
+                      print("tets");
+                      break;
+                    case UserStates.selectedDestination:
+                      geoPoint.removeLast();
+                      iconMarker = SvgPicture.asset(Assets.images.origin,height: 100,width: 40);;
+                      break;
+                    case UserStates.requestDriver:
+                      mapController.advancedPositionPicker();
+                      mapController.removeMarker(geoPoint.last);
+                      geoPoint.removeLast();
+                      iconMarker = destinationMarker;
+                      break;
+                  }
+
                   setState(() {
-                    userCurrentState.removeLast();
+                    if(userCurrentState.length > 1){
+                      userCurrentState.removeLast();
+                    }
                   });
-                }
               }),
             )
           ],
@@ -120,13 +135,14 @@ class _MapScreenState extends State<MapScreen> {
                        if(value <= 1000){
                          distance = "فاصله تا مقصد ${value.toInt()} متر";
                        }else{
-                         distance = "فاصله تا مقصد ${value.toInt()} کیلو متر";
+                         distance = "فاصله تا مقصد ${value~/1000} کیلو متر";
                        }
                      });
                    });
                     setState(() {
                       userCurrentState.add(UserStates.requestDriver);
                     });
+                    getAddress();
                   },
                   child: Text("انتخاب مقصد",style: AppTextStyle.btnTxtStyle)),
             ),
@@ -142,6 +158,29 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.all(AppDimens.large),
               child: Column(
                 children: [
+                  //distance widget
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    width: double.infinity,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(child: Text(distance,style: AppTextStyle.btnTxtStyle.apply(fontSizeFactor: 0.9))),
+                  ),
+                  // show origin address widget
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    width: double.infinity,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(child: Text("مبدا: $originAddress",style: AppTextStyle.btnTxtStyle.apply(fontSizeFactor: 0.9))),
+                  ),
+                  // show origin destination widget
                   Container(
                     width: double.infinity,
                     height: 58,
@@ -149,7 +188,7 @@ class _MapScreenState extends State<MapScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Center(child: Text(distance)),
+                    child: Center(child: Text("مقصد: $destinationAddress",style: AppTextStyle.btnTxtStyle.apply(fontSizeFactor: 0.9))),
                   ),
                   const SizedBox(height: AppDimens.medium),
                   //request driver btn
@@ -163,6 +202,27 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
           );
+  }
+
+  getAddress() async {
+    try{
+      //get origin information
+      await placemarkFromCoordinates(geoPoint.first.latitude, geoPoint.first.longitude,localeIdentifier: "fa").then((List<Placemark> pList) {
+        setState(() {
+          originAddress = "${pList.first.locality.toString()}  ${pList.first.thoroughfare.toString()}  ${pList[2].name.toString()}";
+        });
+      });
+
+      //get destination information
+      await placemarkFromCoordinates(geoPoint.last.latitude, geoPoint.last.longitude,localeIdentifier: "fa").then((List<Placemark> pList) {
+        setState(() {
+          destinationAddress = "${pList.first.locality.toString()}  ${pList.first.thoroughfare.toString()}  ${pList[2].name.toString()}";
+        });
+      },);
+    }catch(e){
+      originAddress = "آدرس یافت نشد";
+      destinationAddress = "آدرس یافت نشد";
+    }
   }
 
   Widget currentState(){
